@@ -44,7 +44,7 @@ ssh-keygen -t rsa -C "it_zdh@163.com"
 # 启动ssh代理
 $ eval "$(ssh-agent -s)"
 > Agent pid 59566
-# id_ed25519变为你生成的本地密钥文件名称
+# id_ed25519变为你生成的本地密钥文件名称，有时候需要重新输入该命令
 $ ssh-add ~/.ssh/id_ed25519
 ```
 
