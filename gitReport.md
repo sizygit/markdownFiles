@@ -29,3 +29,7 @@ Git是一种分布式版本控制系统，广泛用于软件开发和团队协�
 有些版本控制系统原来是集中式的，但也会加入一些分布式的特点。例如[Subversion](https://zh.wikipedia.org/wiki/Subversion)的许多机能可以在没有网络时执行[[7\]](https://zh.wikipedia.org/zh-cn/分散式版本控制#cite_note-7)。[Visual Studio Online](https://zh.wikipedia.org/w/index.php?title=Visual_Studio_Online&action=edit&redlink=1)和Visual Studio Team Services除了集中式的版本管理外，也支持用Git进行的分布式版本控制。
 
 也有些分布式版本控制系统设法要改善取出（checkout）时间以及存储成本的问题，例如微软开发的[Git虚拟文件系统](https://zh.wikipedia.org/wiki/Git虚拟文件系统)就可以在很大的代码库下运作[[8\]](https://zh.wikipedia.org/zh-cn/分散式版本控制#cite_note-8)，会提供一个虚拟文件系统，只在有需要时才会下载文件到电脑中。
+
+
+
+的
