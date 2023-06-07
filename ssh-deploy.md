@@ -79,3 +79,10 @@ $ echo "$SSH_AUTH_SOCK"
 # Print out the SSH_AUTH_SOCK variable
 > /tmp/ssh-4hNGMk8AZX/agent.79453
 ```
+
+---
+
+注意事项：
+
+- 对于windows下，每次打开git bash都可能需要`eval "$(ssh-agent -s)"`与`ssh-add ~/.ssh/id_ed25519`来重新打开agent并加入本地密钥，可利用`ssh-add -l`检查此时是否打开agent及密钥。
+- 尽量使用一个git bash进行操作。
