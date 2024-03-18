@@ -86,3 +86,25 @@ $ echo "$SSH_AUTH_SOCK"
 
 - 对于windows下，每次打开git bash都可能需要`eval "$(ssh-agent -s)"`与`ssh-add ~/.ssh/id_ed25519`来重新打开agent并加入本地密钥，可利用`ssh-add -l`检查此时是否打开agent及密钥。
 - 尽量使用一个git bash进行操作。
+
+
+
+版本: 1.85.1 (user setup)
+提交: 0ee08df0cf4527e40edc9aa28f4b5bd38bbff2b2
+日期: 2023-12-13T09:49:37.021Z
+Electron: 25.9.7
+ElectronBuildId: 25551756
+Chromium: 114.0.5735.289
+Node.js: 18.15.0
+V8: 11.4.183.29-electron.0
+OS: Windows_NT x64 10.0.19045
+
+
+
+```
+scp vscode-server-linux-x64.tar.gz cute@192.168.43.253:~/.vscode-server/bin
+
+mv vscode-server-linux-x64 0ee08df0cf4527e40edc9aa28f4b5bd38bbff2b2
+rm vscode-server-linux-x64.tar.gz
+
+```

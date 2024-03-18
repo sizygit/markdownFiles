@@ -382,3 +382,40 @@ Demo 演示                              Close 关闭
 # 控制原理
 
 margin
+
+```matlab
+clear all;clc;
+ts=1;  tau=0.25;L=floor(tau/ts);
+Gs=tf([1],[1,1],'inputdelay',tau);
+Gz=c2d(Gs,ts,'zoh');
+delay=tf([1],[1 0],ts);
+Gz=Gz*delay;
+[num,den]=tfdata(Gz,'v');
+Gz=filt(num,den,ts);
+Gz=zpk(Gz);
+```
+
+```
+clear all;clc;
+G0=tf(120,conv([1 0],[1 4]));
+G=feedback(G0,1);
+figure(1);bode(G0);grid on         %原系统的频域响应
+figure(2);step(G);grid on           %原系统的阶跃响应曲线
+figure(3);bode(G);grid on          %原闭环系统的带宽频率 
+ts=0.01;
+Gh=tf(1,[ts/2 1]);
+G=G0*Gh;
+Dcs=tf([0.2 1],[0.02 1]);
+sysc=G*Dcs;
+sys=feedback(sysc,1);
+Dcz=c2d(Dcs,ts,'tustin');
+Gcz=c2d(G0,ts,'zoh');
+syscz=Dcz*Gcz;
+sysz=feedback(syscz,1);
+figure(4);step(sys);hold on;step(sysz);grid on
+figure(5);bode(syscz);grid on        %计算机控制系统的频域响应
+
+```
+
+## sim函数使用
+

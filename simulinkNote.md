@@ -1,10 +1,10 @@
 ---
-title: simulink常用工具箱
-date: 2023-06-15 10:42:45
-tags:
+title: simulinkNote
+date: 2024-03-18 13:51:52
+tags: simulink
 ---
 
-# Simulink常用工具箱
+# Simulink常用工具
 
 ## fuzzyControl工具箱
 
@@ -22,11 +22,11 @@ tags:
 
 Mamdani型的模糊逻辑区：
 
-![](simulink常用工具箱/Mamdani模糊逻辑算法.PNG)
+![](simulinkNote/Mamdani模糊逻辑算法.PNG)
 
 Sugeno型模糊逻辑区
 
-![](simulink常用工具箱/T-S模糊逻辑算法.PNG)
+![](simulinkNote/T-S模糊逻辑算法.PNG)
 
 #### 隶属函数编辑器
 
@@ -45,7 +45,7 @@ Sugeno型模糊逻辑区
 
 两种类型推理的输出结论不大相同，前者输出模糊子集，而后者模糊推理输出的是线性函数。
 
-![](simulink常用工具箱/T-S型MF输出界面.PNG)
+![](simulinkNote/T-S型MF输出界面.PNG)
 
 #### 模糊规则编辑器
 
@@ -93,9 +93,9 @@ Sugeno型模糊逻辑区
 
 有许许多多的模糊模型仿真示例
 
-![](simulink常用工具箱/MATLAB模糊系统仿真示例.PNG)
+![](simulinkNote/MATLAB模糊系统仿真示例.PNG)
 
-## StateFlow工具箱
+## StateFlow
 
 ## **Model Linearizer** 
 
@@ -138,11 +138,13 @@ Sugeno型模糊逻辑区
 
 实例：
 
-![image-20230619190121382](simulink常用工具箱/image-20230619190121382.png)
+![image-20230619190121382](simulinkNote/image-20230619190121382.png)
 
 
 
+## S-function
 
+参考链接[C++ MEX 函数](https://ww2.mathworks.cn/help/matlab/matlab_external/c-mex-functions.html)，[知乎S-function使用](https://zhuanlan.zhihu.com/p/511253062)，[2020-02-12-使用C语言写简单S-Functio](https://blog.smileland.me/2020/02/12/%E4%BD%BF%E7%94%A8C%E8%AF%AD%E8%A8%80%E5%86%99%E7%AE%80%E5%8D%95S-Function/)
 
 
 
