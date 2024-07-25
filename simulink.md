@@ -16,11 +16,11 @@
 
 Mamdani型的模糊逻辑区：
 
-![](./fuzzyControl.assets/Mamdani%E6%A8%A1%E7%B3%8A%E9%80%BB%E8%BE%91%E7%AE%97%E6%B3%95.PNG)
+![](simulink.assets/Mamdani模糊逻辑算法.PNG)
 
 Sugeno型模糊逻辑区
 
-![](./fuzzyControl.assets/T-S%E6%A8%A1%E7%B3%8A%E9%80%BB%E8%BE%91%E7%AE%97%E6%B3%95.PNG)
+![](simulink.assets/T-S%E6%A8%A1%E7%B3%8A%E9%80%BB%E8%BE%91%E7%AE%97%E6%B3%95.PNG)
 
 #### 隶属函数编辑器
 
@@ -39,7 +39,7 @@ Sugeno型模糊逻辑区
 
 两种类型推理的输出结论不大相同，前者输出模糊子集，而后者模糊推理输出的是线性函数。
 
-![](./fuzzyControl.assets/T-S%E5%9E%8BMF%E8%BE%93%E5%87%BA%E7%95%8C%E9%9D%A2.PNG)
+![](simulink.assets/T-S型MF输出界面.PNG)
 
 #### 模糊规则编辑器
 
@@ -87,7 +87,7 @@ Sugeno型模糊逻辑区
 
 有许许多多的模糊模型仿真示例
 
-![](./fuzzyControl.assets/MATLAB%E6%A8%A1%E7%B3%8A%E7%B3%BB%E7%BB%9F%E4%BB%BF%E7%9C%9F%E7%A4%BA%E4%BE%8B.PNG)
+![](simulink.assets/MATLAB模糊系统仿真示例.PNG)
 
 ## StateFlow工具箱
 
