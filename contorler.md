@@ -225,7 +225,7 @@ $$
 
 
 
-### matlab命令行下MPC工具箱设计
+### matlab下MPC工具箱设计
 
 | 相关函数   | 描述                                 |
 | ---------- | ------------------------------------ |
@@ -283,8 +283,15 @@ U = struct('Weights',[],'Min',[],'Max',[]);
 setterminal(mpcObj, Y, U);
 ```
 
-- 可利用`review()`函数检查mpc控制器可能存在的问题
+- 如果必要时，还要设置系统控制设置的标称值，通常我们设置状态空间模型是使用与标称工作点的偏差来定义的，因此将每个输入和输出通道的标称值设置为 0。
 
+```matlab
+% specify nominal values for inputs and outputs
+mpcObj.Model.Nominal.U = 0;
+mpcObj.Model.Nominal.Y = [0;0];
+```
+
+- 可利用`review()`函数检查mpc控制器可能存在的问题
 - 结果可以直接利用[`sim`](https://ww2-mathworks-cn.translate.goog/help/releases/R2020b/mpc/ref/mpc.sim.html?_x_tr_sl=auto&_x_tr_tl=zh-CN&_x_tr_hl=zh-CN)函数仿真结果绘图，也可以使用`mpcmove()`函数运行。
 
 ```matlab
@@ -308,6 +315,12 @@ for step = 1:length(t)
     u(step) = mpcmove(mpcObj, mpcState, y(step), ref);   
 end
 ```
+
+​		对simulink中的MPC Controller模块的使用，则分为以下几步：
+
+- 在**MPC Structure**内定义MPC的输入输出以及采样时间，同时也需要设置**Simulnk Operating Point**中进行(非线性)模型线性化的操作点，如果想要计算某一个输出为定值的操作点，可将其设置为**Trim Output Constraint**，然后在 **Create New Operating Point**, 点击 **Trim Model**，将对应的输出值定义为已知定值。可在trim后看到计算出的各个状态刘昂的稳态。
+-  在**I/O Attributes**中设置plant的输入输出对应的名称，标称值及单位。
+- 在**Scenario**中创建不同的场景，然后进行绘制结果与调参。
 
 2. 非线性MPC
 
@@ -432,6 +445,67 @@ $$
 
 ## 滑模控制
 
+### 基本原理
+
+​		我们定义跟踪误差为$\tilde{x}=x-x_d$，利用标量方程$s(\mathbf{x};t)=0$定义状态空间中的一个**时变曲面**$S(t)$
+$$
+s(\mathbf{x};t)=(\frac{d}{dt}+\lambda)^{n-1}\tilde{x}
+$$
+若给定初始状态$\mathbf{x}(0)=\mathbf{x}_d(0)$，则跟踪$\bf x\equiv x_{d}$即等价为状态轨线必须停留在曲面$S(t)$上；同时$s\equiv 0$为一个**线性微分方程**，若给定前式初始条件，则其唯一解为$\tilde{x}=0$。因此n维向量的跟踪问题可被用s表示的一阶镇定问题所取代。一般情况下，$S$的维数等于控制向量的维数。
+
+​		系统轨线满足**滑动条件**
+$$
+\frac12\frac{\mathrm{d}}{\mathrm{d}t}s^2\leqslant-\eta\mid s\mid
+$$
+即可使滑动曲面成为一个不变集，上式表达的是$s^2$为度量的平方“距离”沿所有系统轨线减小，使得轨线趋于曲面。同时该式也确保了若初始条件不严格成立即$s(t=0)\ne0或x(t=0)\ne x_d(t=0)$，状态轨线也可以在有限时间内到达曲面，可通过对上式积分证得。**$\eta$反映了从外部回归到滑模面的时间**。
+
+​		若给定$f(x)与b(x)$不确定的界，我们还可对k值进行定义。我们假设系统$\ddot{x}=f+u$的$f$不精确得到，有一估计值$\tilde{f}$，且估计误差受已知函数$F=F(x,\dot{x})$限制：
+$$
+\mid\hat{f}-f\mid\leqslant F
+$$
+我们若**考虑动态$f$的不确定性**，则
+$$
+\frac{1}{2}\frac{\mathrm{d}}{\mathrm{d}t}s^2=\dot{s}\cdot s=[f-\hat{f}-k\mathrm{sgn}(s)]s=(f-\hat{f})s-k\mid s\mid 
+$$
+为满足滑动条件，可取
+$$
+k=F+\eta
+$$
+​		为了消除控制器的颤振，可在切换曲面附近设置**薄边界层**(此部分内容参考*应用非线性控制*书籍)
+$$
+B(t)=\left\{ \mathbf{x},|s(\mathbf{x},t)|\le\Phi\right\}
+$$
+在边界层的外部仍选用之前的控制律，但是在边界层的内部可以使用$s/\Phi$代替$sgn(s)$，从而实现边界层内的平滑控制。这种平滑控制的本质是添加一个低通滤波器到边缘s的局部动态中，这种类滤波器结构可以在本质上调整控制律以达到跟踪精度和未建模动态的鲁棒性间的权衡。
+
+​		为了保证边界层的吸引性，滑动条件需做出修改，只需令在边界层外满足滑动条件，如下：
+$$
+|s|\ge\Phi\Rightarrow \frac{1}{2}\frac{d}{dt}s^2\le(\dot{\Phi}-\eta)|s|
+$$
+附加项$\dot{\Phi}|s|$反映了边界层吸引条件在边界层收缩时比扩张时更为苛刻。为了满足上式的滑动条件，需要在不连续增益$k(x)$加上$-\dot{\Phi}$，即切换控制律中$k(x)sgn(s)$项变为$\bar{k}(x)sat(\Phi)$($sat()$同幅值为1的限幅函数)
+$$
+\begin{gathered}
+u=\hat{u}-\bar{k}(x)\operatorname{sat}(s/\Phi)\\
+\bar{k}(x)=k(x)-\dot{\Phi}
+\end{gathered}
+$$
+此时边界层内的系统轨线可由变元$s$表示为：
+$$
+\dot{s}=-\bar{k}(x) \frac{s}{\Phi}-\Delta f(x)
+$$
+![](contorler.assets/2023-11-01-23h57m.png)
+
+我们还可得到边界厚度的期望时间变化（**平衡条件**）：
+$$
+\dot{\Phi}+\lambda\Phi=k(x_d)
+$$
+它相当于调整闭环系统，使之类似与n阶临界阻尼系统，不连续增益表达式可写为
+$$
+\bar{k}(x)=k(x)-k(x_d)+\lambda\Phi 
+$$
+​		同时s是闭环形态的简洁描述，控制信号直接依赖于s，且跟踪误差$\tilde{x}$是s经过滤波后得到，因此**s-轨线代表了模型不确定性假设有效性的一个时变度量**；类似的**边界层厚度$\Phi$则是动态模型不确定性随时间的演化**。
+
+
+
 ### 简单的实例
 
 对于如下被控对象，期望跟踪信号为$\theta_d(t)$：
@@ -444,13 +518,13 @@ $d(t)$为外加干扰，且$|d(t)|\leq D$,可设计如下滑模面：
 $$
 s(t)=\dot{e}+ce(t)
 $$
-定义Lyapunov函数为$V=\frac{1}{2}s^2$，则$\dot{V}=\dot{s}s$，若定义由上$e(t)=\theta(t)-\theta_d(t)$式可推导得：
+定义Lyapunov函数为$V=\frac{1}{2}s^2$，则$\dot{V}=\dot{s}s$，若定义由上$e(t)=\theta_d(t)-\theta(t)$式可推导得：
 $$
-\dot{s}(t)=\ddot{e}+c\dot{e}(t)=\ddot{\theta}(t)-\ddot{\theta}_d(t)+c(\dot{\theta}(t)-\dot{\theta}_d(t))\\\text{代入被控对象模型消去}\ddot{\theta}(t)\\=c\dot{e}(t)+\frac{1}{J}(u(t)+d(t))-\ddot{\theta}_d(t)
+\dot{s}(t)=\ddot{e}+c\dot{e}(t)=\ddot{\theta}_d(t)-\ddot{\theta}(t)+c(\dot{\theta}_d(t)-\dot{\theta}(t))\\\text{代入被控对象模型消去}\ddot{\theta}(t)\\=c\dot{e}(t)-\frac{1}{J}(u(t)+d(t))+\ddot{\theta}_d(t)
 $$
 可设计滑模控制律为：
 $$
-u(t)=J(-c\dot{e}+\ddot{\theta}_{\mathrm{d}}-\eta\mathrm{sgn}(s))-D\mathrm{sgn}(s) \\ \therefore\dot{s}s  =s\left(-\eta\mathrm{sgn}(s)-\frac1JD\mathrm{sgn}(s)+\frac1Jd\left(t\right)\right)  \leq0
+u(t)=J(c\dot{e}+\ddot{\theta}_{\mathrm{d}}+\eta\mathrm{sgn}(s))-D\mathrm{sgn}(s) \\ \therefore\dot{s}s  =s\left(-\eta\mathrm{sgn}(s)-\frac1JD\mathrm{sgn}(s)+\frac1Jd\left(t\right)\right)  \leq0
 $$
 
 ```matlab
@@ -479,8 +553,40 @@ sys(3)=de;
 
 我们经常使用的典型的趋近律为指数趋近律，其表达式如下：
 $$
-\dot{s}=-\varepsilon\mathrm{sgn}s-ks\quad\varepsilon>0,k>0
+\dot{s}=-k\mathrm{sgn}s-\varepsilon s\quad\varepsilon>0,k>0
 $$
 指数趋近时，**指数趋近项**$-ks$能决定着$V(t)$收敛至零的速度，能保证当s较大时，系统能以较大的速度趋近于滑动模态；且其保证了趋近速度在运动点到达切换面时，有着较小的速度(指数函数的性质)，为了保证其能在有限时间到达，需要增加一项**等速趋近项**$\dot{s}=-\varepsilon\mathrm{sgn}s$，确保接近切换面时速度不为0；
 
-  
+```matlab
+function U = SlidingModeController(x)
+......
+C=[-9.4868 -8.1920 39.5264 5.7657];%参考状态反馈控制器
+k=0.001;%趋近等速项 小正常数 实际调试值
+k2=13; %趋近指数项 正常数 实际调试值
+S=C*x; %滑模面函数
+U=-inv(C*B)(C*A*x+k*sign(S)+k2*S)
+end
+```
+
+  		我们接着考虑基于趋近律的鲁棒控制，若对于
+$$
+\ddot{\theta}(t)=f(\theta,t)+bu(t)+d(t)
+$$
+我们按照基于指数趋近律滑模设计，得：
+$$
+u(t)=\frac{1}{b}(k\mathrm{sgns}+\varepsilon s+c\dot{e}+\ddot{\theta}_{d}+f-d)
+$$
+我们利用干扰的界进行设计$\dot{s}\left(t\right)=- ksgns-\varepsilon s+d_{c}-d$，显然为了使得$s\dot{s}\le0$，需满足$s>0,d_c-d\le0$与$s<0,d_c-d>0$，因此我们可以设计$d_c$为
+$$
+d_c = \frac{d_{max}+d_{min}}{2}-\frac{d_{max}-d_{min}}{2}*sgn(s)
+$$
+此时控制律为
+$$
+u(t)=\frac{1}{b}(k\mathrm{sgns}+\varepsilon s+c\dot{e}+\ddot{\theta}_{d}+f-d_c)
+$$
+
+
+
+# 摄动理论
+
+​																									
