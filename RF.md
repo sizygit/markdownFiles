@@ -194,11 +194,13 @@ $\epsilon$ - greedy策略是强化学习最基本最常用的随机策略。其�
 
 ### On/Off policy
 
-(1)同策略。
+我们称采样数据的策略为**行为策略**（behavior policy），称用这些数据来更新的策略为**目标策略**（target policy）。在线策略（on-policy）算法表示行为策略和目标策略是同一个策略；而离线策略（off-policy）算法表示行为策略和目标策略不是同一个策略。Sarsa 是典型的在线策略算法，而 Q-learning 是典型的离线策略算法。判断二者类别的一个重要手段是看计算时序差分的价值目标的数据是否来自当前的策略，
+
+(1)on-policy
 
 同策略（on-policy）是指产⽣数据的策略与评估和要改善的策略是同⼀个策略。⽐如，要产⽣数据的策略和评估及要改善的策略都是 $\epsilon-soft$ 策略。其伪代码如下所示。
 
-(2)异策略。
+(2)off-policy
 
 异策略（off-policy）是指产⽣数据的策略与评估和改善的策略不是同⼀个策略。我们用 $\pi$ 表示来评估和改善的策略，用 $\mu$ 表示产⽣样本数据的策略。异策略可以保证充分的探索性。例如用来评估和改善的策略 $\pi$ 是贪婪策略，用于产生数据的探索性策略 $\mu$  为探索性策略。
 
@@ -317,13 +319,15 @@ $$
 
 ### Deep Q-learning
 
-​		DQN是一种深度强化学习算法，对于简单的任务神经网络通常不需要“太深”，一两个隐藏层足矣。Deep Q-learning最小化的目标函数（可看作为bellman最优误差的平方）为
+​		DQN是一种深度强化学习算法，可以用来解决连续状态下离散动作的问题，对于简单的任务神经网络通常不需要“太深”，一两个隐藏层足矣。Deep Q-learning最小化的目标函数（可看作为bellman最优误差的平方）为
 $$
 J=\mathbb{E}[ (R+\max_{a \in A(S^{'} )} \hat{q}(S^{'},a,w)-\hat{q}(S,A,w))^2]
 $$
-为了简便计算梯度，我们将引入两个网络，一个是用来生成估计Q值$y_M=\hat{q}(S,A,w))$的**main network**，一个是用来生成期望的Q值及时序差分定义的TD目标$y_T=R+ \max _{a \in A(S^{'} )} \hat{q}(S^{'},a,w_T)$的**target network**，假设$w_T$在target network训练短期内是不变的，此时梯度表达式将得到简化，通常我们并不直接使用梯度表达式，而是使用深度学习的一些软件方法。起初我们通过设置两个网络有相同的$w$，main network通过样本不断更新参数w，而target network则是固定使用main network里一个比较旧的参数$w_T$，固定周期内更新。
+​		为了简便计算梯度，我们将引入两个网络，一个是用来生成估计Q值$y_M=\hat{q}(S,A,w))$的**main network**，一个是用来生成期望的Q值及时序差分定义的TD目标$y_T=R+ \max _{a \in A(S^{'} )} \hat{q}(S^{'},a,w_T)$的**target network**，假设$w_T$在target network训练短期内是不变的，此时梯度表达式将得到简化，通常我们并不直接使用梯度表达式，而是使用深度学习的一些软件方法。起初我们通过设置两个网络有相同的$w$，main network通过样本训练不断更新参数w，而target network则是固定使用main network里一个比较旧的参数$w_T$，固定周期内更新。
 
-​		同时DQN还引入了**经验回放**（experience replay）方法，具体做法为维护一个**回放缓冲区**(replay buffer)，将每次从环境中采样得到的四元组数据$(s,a,r,s^{'})$存储到replay buffer中，训练 main network的时候再从回放缓冲区中随机采样mini-batch来进行训练。从replay buffer中取(S,A)是均匀抽取的，这样就可以保证采样得到的(S,A)是均匀分布同时打破由于behavior policy采样得到样本(S,A)间的关联性。伪代码如下：
+​		注意两个网络输入是状态-动作对$(s,a_i)$，输出是$q(s,a_i)$，通常为了简便，输入可以为状态$s$，输出是状态s下每一个动作对应的$q(s)=[q(s,a_1),\cdots,q(s,a_n)]^T$，此时输出是一个与动作维度相同的向量（不生成q-table）。
+
+​		同时DQN还引入了**经验回放**（experience replay）方法，具体做法为维护一个**回放缓冲区**(replay buffer)，将每次behavior policy从环境中采样得到的**四元组数据**$(s,a,r,s^{'})$存储到replay buffer中，训练 main network的时候再从回放缓冲区中随机采样batch来进行训练。从replay buffer中取(S,A)是均匀抽取的，这样就可以保证采样得到的(S,A)是均匀分布同时打破由于behavior policy采样得到样本(S,A)间的关联性。伪代码如下：
 
 ![](RF.assets/deep Q-learing-值函数近似.png)
 
