@@ -331,6 +331,20 @@ $$
 
 ![](RF.assets/deep Q-learing-值函数近似.png)
 
+### Dueling DQN
+
+​		Dueling DQN 是 DQN 另一种的改进算法，它在传统 DQN 的基础上只进行了微小的改动，但却能大幅提升 DQN 的表现。在强化学习中，我们将状态动作价值函数$A$减去状态价值函数的$Q$结果定义为优势函数$A(s,a)=Q(s,a)-V(s)$，因此该方法中Q网络不再直接输出动作值函数$Q$，而是分别输出状态值函数与优势函数，$Q$值则是通过两个输出求和得到。
+$$
+Q_{\eta,\alpha,\beta}(s,a)=V_{\eta,\alpha}(s)+A_{\eta,\beta}(s,a)
+$$
+​		将状态价值函数和优势函数分别建模的好处在于：某些情境下智能体只会关注状态的价值，而并不关心不同动作导致的差异，此时将二者分开建模能够使智能体更好地处理与动作关联较小的状态。
+
+​		同时训练中由于不同的V与A组合可以得到同样的Q值，因此Dueling DQN 强制最优动作的优势函数的实际输出为 0，即
+$$
+Q_{\eta,\alpha,\beta}(s,a)=V_{\eta,\alpha}(s)+A_{\eta,\beta}(s,a)-\frac1{|\mathcal{A}|}\sum_{a^{\prime}}A_{\eta,\beta}\left(s,a^{\prime}\right)
+$$
+此时不再满足贝尔曼最优方程，但实际应用时更加稳定。
+
 ## 1.6 策略梯度
 
 ​		对于基于表格的离散策略，策略的寻优可以直接比较状态值函数选取使得所有状态的状态值函数均取最大值，若策略用状态的函数来表示如$\pi(a|s,\theta)$，$\theta$为策略函数的可调参数，便需要定义标量的metrics来进行最优策略的选取。
@@ -376,7 +390,7 @@ $$
 &=\mathbb{E}_{S\sim\eta,A\sim\pi(S,\theta)}\Big[\nabla_{\theta}\ln\pi(A|S,\theta)q_{\pi}(S,A)\Big]
 \end{align}
 $$
-式中$\eta$为状态分布，上下代换涉及等式$\nabla_\theta\ln\pi(a|s,\theta)=\frac{\nabla_\theta\pi(a|s,\theta)}{\pi(a|s,\theta)}$ 。策略需满足$\pi(a|s,\theta)\in[0,1]$，通常在神经网络输出层利用softmax层实现。由于目标函数要求$A\sim\pi$，且后续梯度算法也是更新$\pi$因此为On-Policy。
+式中$\eta$为状态分布，上下代换涉及等式$\nabla_\theta\ln\pi(a|s,\theta)=\frac{\nabla_\theta\pi(a|s,\theta)}{\pi(a|s,\theta)}$ 。策略需满足$\pi(a|s,\theta)\in[0,1]$，通常在神经网络输出层利用**softmax层**实现。由于目标函数要求$A\sim\pi$，且后续梯度算法也是更新$\pi$因此为On-Policy。
 
 ### 蒙特卡洛策略梯度方法
 
@@ -433,6 +447,12 @@ $$
 $$
 \delta_{t}(s_{t},a_{t}) = q_t(s_t,a_t)-v_t(s_t)\approx r_{t+1}+\gamma v_t(s_{t+1})-v_t(s_t)
 $$
+​		通常利用深度学习包来学习参数时，我们不需要直接给出梯度，给出目标函数即可自动计算梯度，通常critic网络的损失函数使用TD误差的MSE均方差误差函数，而对于actor网络我们可定义单步的损失函数为
+$$
+L_{actor} = - \delta _t(s_t,a_t)\ln \pi(a_t|s_t,\theta_t)
+$$
+此时将会自动沿着前式定义的梯度方向更新参数。
+
 ![](RF.assets/A2C.png)
 
 ### Off-policy actor-critic
@@ -472,3 +492,107 @@ $$
 ![](RF.assets/DAG.png)
 
 对于behavior策略$\beta$可以选取各种形式，也可以是基于概率的策略，只需要一定探索性即可。
+
+## 1.8 TPRO方法
+
+### 基本原理
+
+​		考虑在更新时找到一块**信任区域**（trust region），在这个区域上更新策略时能够得到某种策略性能的安全性保证，这就是**信任区域策略优化**（trust region policy optimization，TRPO）算法的主要思想。TRPO 算法在 2015 年被提出，它在理论上能够保证策略学习的性能单调性，并在实际应用中取得了比策略梯度算法更好的效果。
+
+​		假设当前策略为$\pi_\theta$，寻找一个更优的新策略$\pi_\theta$，从而最大化目标函数$J(\theta)$。由于初始状态分布与策略无关，上述策略$\pi_\theta$下的优化目标可以写成在新策略$\pi_{\theta^{\prime}}$的期望形式：	
+$$
+\begin{aligned}
+J(\theta)& =\mathbb{E}_{s_0}[V^{\pi_\theta}(s_0)] \\
+&=\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^{\infty}\gamma^{t}V^{\pi_{\theta}}(s_{t})-\sum_{t=1}^{\infty}\gamma^{t}V^{\pi_{\theta}}(s_{t})\right] \\
+&=-\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^{\infty}\gamma^{t}\left(\gamma V^{\pi_{\theta}}(s_{t+1})-V^{\pi_{\theta}}(s_{t})\right)\right]
+\end{aligned}
+$$
+因此新旧策略目标函数差值为
+$$
+\begin{aligned}
+J(\theta')-J(\theta)& =\mathbb{E}_{s_0}\left[V^{\pi_{\theta^{\prime}}}(s_0)\right]-\mathbb{E}_{s_0}\left[V^{\pi_\theta}(s_0)\right] \\
+&=\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^{\infty}\gamma^{t}r(s_{t},a_{t})\right]+\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^{\infty}\gamma^{t}\left(\gamma V^{\pi_{\theta}}(s_{t+1})-V^{\pi_{\theta}}(s_{t})\right)\right] \\
+&=\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^{\infty}\gamma^{t}\left[r(s_{t},a_{t})+\gamma V^{\pi_{\theta}}(s_{t+1})-V^{\pi_{\theta}}(s_{t})\right]\right] \\
+&=\mathbb{E}_{\pi_{\theta^{\prime}}}\left[\sum_{t=0}^\infty\gamma^tA^{\pi_\theta}(s_t,a_t)\right] \\
+&=\sum_{t=0}^{\infty}\gamma^{t}\mathbb{E}_{s_{t}\sim P_{t}^{\pi_{\theta^{\prime}}}}\mathbb{E}_{a_{t}\sim\pi_{\theta^{\prime}}(\cdot|s_{t})}\left[A^{\pi_{\theta}}(s_{t},a_{t})\right] \\
+&=\frac{1}{1-\gamma}\mathbb{E}_{s\sim\nu^{\pi_{\theta^{\prime}}}}\mathbb{E}_{a\sim\pi_{\theta^{\prime}}(\cdot|s)}\left[A^{\pi_{\theta}}(s,a)\right]
+
+
+\end{aligned}
+$$
+式中$\nu^\pi(s)=(1-\gamma)\sum_{t=0}^\infty\gamma^tP_t^\pi(s)$，由于式中需要利用新策略来收集样本，在实际中难以应用，因此我们此时用旧策略来进行近似样本的状态分布，动作仍旧使用新策略采样得到，当新旧策略非常接近时即状态访问分布变化很小，这种近似具有合理性：
+$$
+L_\theta(\theta')=J(\theta)+\frac{1}{1-\gamma}\mathbb{E}_{s\sim\nu^{\pi_\theta}\mathbb{E}_{a\sim\pi_{\theta'}(\cdot|s)}}\left[A^{\pi_\theta}(s,a)\right]
+$$
+结合重要性采样定理处理动作分布即可得到如下近似公式：
+$$
+L_\theta(\theta')=J(\theta)+\mathbb{E}_{s\sim\nu^{\pi_\theta}}\mathbb{E}_{a\sim\pi_\theta(\cdot|s)}\left[\frac{\pi_{\theta^{\prime}}(a|s)}{\pi_\theta(a|s)}A^{\pi_\theta}(s,a)\right]
+$$
+此时便可用旧策略$\pi_{\theta^{}}$采样出的数据来估计并优化新策略$\pi_{\theta^{\prime}}$。
+
+​		为了保证新旧策略距离相近，需要利用衡量概率分布近似程度的库尔贝克-莱布勒（Kullback-Leibler，KL）散度，则约束优化问题可描述为
+$$
+\begin{aligned}&\max_{\theta^{\prime}} L_{\theta}(\theta^{\prime})\\&\mathrm{s.t.} \mathbb{E}_{s\sim\nu^{\pi_{\theta_{k}}}}[D_{KL}(\pi_{\theta_{k}}(\cdot|s),\pi_{\theta^{\prime}}(\cdot|s))]\leq\delta\end{aligned}
+$$
+
+### 近似求解
+
+​		对目标函数与约束分别进行一阶与二阶泰勒近似展开：
+$$
+\mathbb{E}_{s\sim\nu}\mathbb{E}_{a\sim\pi_{\theta_{k}}(\cdot|s)}\left[\frac{\pi_{\theta^{\prime}}(a|s)}{\pi_{\theta_{k}}(a|s)}A^{\pi_{\theta_{k}}}(s,a)\right]\approx g^{T}(\theta^{\prime}-\theta_{k})\\\mathbb{E}_{s\sim{\nu ^{\pi_{\theta_{k}}} }}[D_{KL}(\pi_{\theta_{k}}(\cdot|s),\pi_{\theta^{\prime}}(\cdot|s))]\approx\frac{1}{2}(\theta^{\prime}-\theta_{k})^{T}H(\theta^{\prime}-\theta_{k})
+$$
+​	此时近似后的约束优化问题为
+$$
+\theta_{k+1}=argmax_{\theta^{\prime}} g^T(\theta^{\prime}-\theta_k )\\s.t. \quad\frac12(\theta^{\prime}-\theta_k)^TH(\theta^{\prime}-\theta_k)\leq\delta
+$$
+得到的KKT解为
+$$
+\theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{g^TH^{-1}g}}H^{-1}g
+$$
+
+### 广义优势函数估计
+
+​		TRPO式中的优势函数$A^{\pi _\theta}$，常用的一种估计方法为**广义优势估计**（Generalized Advantage Estimation，GAE）,记时序差分误差为$\delta_{t}=r_{t}+\gamma V(s_{t+1})-V(s_{t})$，此时V是已经学习的近似状态价值函数，根于多步时序差分思想，有：
+$$
+\begin{aligned}
+A_{t}^{(1)}& =\delta_{t} && =-V(s_t)+r_t+\gamma V(s_{t+1}) \\
+A_{t}^{(2)}& =\delta_t+\gamma\delta_{t+1} && =-V(s_t)+r_t+\gamma r_{t+1}+\gamma^2V(s_{t+2}) \\
+A_{t}^{(3)}& =\delta_{t}+\gamma\delta_{t+1}+\gamma^{2}\delta_{t+2} && =-V(s_t)+r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\gamma^3V(s_{t+3}) \\
+A_{t}^{(k)}& =\sum_{l=0}^{k-1}\gamma^l\delta_{t+l} && =-V(s_t)+r_t+\gamma r_{t+1}+\ldots+\gamma^{k-1}r_{t+k-1}+\gamma^kV(s_{t+k}) 
+\end{aligned}
+$$
+GAE 将这些不同步数的优势估计进行指数加权平均：
+$$
+\begin{aligned}
+A_{t}^{GAE}& =(1-\lambda)(A_{t}^{(1)}+\lambda A_{t}^{(2)}+\lambda^{2}A_{t}^{(3)}+\cdots) \\
+&=(1-\lambda)(\delta_t+\lambda(\delta_t+\gamma\delta_{t+1})+\lambda^2(\delta_t+\gamma\delta_{t+1}+\gamma^2\delta_{t+2})+\cdots) \\
+&=(1-\lambda)\left(\delta_t\frac{1}{1-\lambda}+\gamma\delta_{t+1}\frac{\lambda}{1-\lambda}+\gamma^2\delta_{t+2}\frac{\lambda^2}{1-\lambda}+\cdots\right) \\
+&=\sum_{l=0}^\infty(\gamma\lambda)^l\delta_{t+l}
+\end{aligned}
+$$
+式中$\lambda \in [0,1]$为GAE引入的额外超参数，若$\lambda = 0$即仅使用一步差分来估计优势，若$\lambda =1$即使用每一步差分的完全平均值来进行估计优势值。
+
+### 共轭梯度与线性搜索
+
+​		TRPO利用共轭梯度法来避免直接计算hessian矩阵，直接计算参数更新方向$x=H^{-1}g$。记KL约束下的更新最大步长为$\beta$，则约束条件为$\frac12(\beta x)^TH(\beta x)  = \delta$，参数更新式可写为
+$$
+\theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^THx}}x
+$$
+此时便可利用[共轭梯度法](https://keson96.github.io/2016/11/27/2016-11-27-Conjugate-Gradient-Method/)来求解$Hx=g$，伪代码为
+
+![](RF.assets/con-gradient.png)
+
+​		在共轭梯度运算过程中，直接计算$\alpha_k$和$r_{k+1}$需要计算和存储海森矩阵。为了避免这种大矩阵$H$的出现，我们只计算向量$Hx$，而不直接计算和存储矩阵$H$。这样做比较容易，因为对于任意的列向量，容易验证：
+$$
+Hv=\nabla_\theta\left(\left(\nabla_\theta(D_{KL}^{\nu^{\pi_{\theta_k}}}(\pi_{\theta_k},\pi_{\theta^{\prime}}))\right)^T\right)v=\nabla_\theta\left(\left(\nabla_\theta(D_{KL}^{\nu^{\pi_{\theta_k}}}(\pi_{\theta_k},\pi_{\theta^{\prime}}))\right)^Tv\right)
+$$
+即先用梯度和向量点乘后计算梯度。
+
+​		上式求解得到的$\theta '$由于近似未必是符合约束的最优解，因此TRPO会在每次迭代后进行一次线性搜索，即寻找一个最小的非负整数$i$，满足
+$$
+\theta_{k+1}=\theta_k+\alpha^i\sqrt{\frac{2\delta}{x^THx}}x
+$$
+ TRPO 的**算法流程图**如下，策略网络和价值网络（与 Actor-Critic 算法一样）：
+
+<img src="RF.assets/TRPO.png" style="zoom:150%;" />
+
