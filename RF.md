@@ -497,6 +497,7 @@ $$
 
 ### 基本原理
 
+​		策略梯度算法的硬伤就在更新步⻓，当步⻓不合适时，更新的参数所对应的策略是⼀个更不好的策略，当利⽤这个更不好的策略采样学习时，再次更新的参数会更差，因此很容易导致越学越差，最后崩溃。因此我们希望在一个合适的步长更新策略后，回报函数不能更差，因此引入了TPRO。		
 ​		考虑在更新时找到一块**信任区域**（trust region），在这个区域上更新策略时能够得到某种策略性能的安全性保证，这就是**信任区域策略优化**（trust region policy optimization，TRPO）算法的主要思想。TRPO 算法在 2015 年被提出，它在理论上能够保证策略学习的性能单调性，并在实际应用中取得了比策略梯度算法更好的效果。
 
 ​		假设当前策略为$\pi_\theta$，寻找一个更优的新策略$\pi_\theta$，从而最大化目标函数$J(\theta)$。由于初始状态分布与策略无关，上述策略$\pi_\theta$下的优化目标可以写成在新策略$\pi_{\theta^{\prime}}$的期望形式：	
@@ -528,7 +529,7 @@ $$
 $$
 L_\theta(\theta')=J(\theta)+\mathbb{E}_{s\sim\nu^{\pi_\theta}}\mathbb{E}_{a\sim\pi_\theta(\cdot|s)}\left[\frac{\pi_{\theta^{\prime}}(a|s)}{\pi_\theta(a|s)}A^{\pi_\theta}(s,a)\right]
 $$
-此时便可用旧策略$\pi_{\theta^{}}$采样出的数据来估计并优化新策略$\pi_{\theta^{\prime}}$。
+此时便可用旧策略$\pi_{\theta^{}}$采样出的数据来估计并优化新策略$\pi_{\theta^{\prime}}$。通常概率为很小的数值，可以先后使用 log 和 exp 是提高数值计算的稳定性，避免直接计算概率比率时可能出现的数值下溢或上溢问题。
 
 ​		为了保证新旧策略距离相近，需要利用衡量概率分布近似程度的库尔贝克-莱布勒（Kullback-Leibler，KL）散度，则约束优化问题可描述为
 $$
@@ -578,7 +579,7 @@ $$
 $$
 \theta_{k+1}=\theta_k+\sqrt{\frac{2\delta}{x^THx}}x
 $$
-此时便可利用[共轭梯度法](https://keson96.github.io/2016/11/27/2016-11-27-Conjugate-Gradient-Method/)来求解$Hx=g$，伪代码为
+此时便可利用[共轭梯度法](https://keson96.github.io/2016/11/27/2016-11-27-Conjugate-Gradient-Method/)来求$Hx=g$的解$x$，伪代码为
 
 ![](RF.assets/con-gradient.png)
 
