@@ -41,6 +41,7 @@ here,the figure \ref{ fig:ex1} can understand this
 多个图片排版 需要使用`\sufigure`和`minipage`环境,需要加入**subfigure**宏包
 
 ```latex
+%ex1
 \begin{figure}[H]
 	\caption{a figure C} \label{fig:xxx}
 	\subfigure{
@@ -57,6 +58,27 @@ here,the figure \ref{ fig:ex1} can understand this
 	}
 \end{figure}
 as figure \ref{fig:xxx} we can know
+%ex2  
+\begin{figure}[htbp]
+    \centering
+    % 第一个子图
+    \begin{subfigure}[t]{0.47\textwidth} %可选 [b] 底部对齐或 [c] 居中对齐 [t] 顶部对齐
+        \centering
+        \includegraphics[width=\linewidth]{figures/三维轨迹图高刚度.png} % 图片路径
+        \caption{子图1标题} % 子图标题
+        \label{fig:sub1}
+    \end{subfigure}
+    \hfill % 水平填充间距
+    % 第二个子图
+    \begin{subfigure}[t]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/三维轨迹图高刚度.png}
+        \caption{子图2标题}
+        \label{fig:sub2}
+    \end{subfigure}
+    \caption{总图标题}
+    \label{fig:main}
+\end{figure}
 ```
 
 
@@ -244,6 +266,11 @@ split 环境和 aligned 环境用法类似，也用于和 equation 环境套用�
 \item …
 
 \end{enumerate}
+\usepackage{enumitem}     % 有序列表标签库
+\begin{enumerate}[label=(\arabic*)]
+%% 字母编号[label=(\alph*)] 罗马数字编号[label=(\roman*)]
+    \item ...
+\end{enumerate}
 ```
 
 关键字环境 **description** 的用法与以上两者类似，不同的是 \item 后的可选参数用来写关键字，以粗体显示，一般是必填的：
@@ -370,6 +397,63 @@ The proof of theorem.
 化学 & \diagbox[dir=SW]{ce3}{ce4} & 67 & 82 \\   % 注意方向参数是[]
 \hline
 \end{tabular}
+```
+
+### 简单的封面页或者标题设置
+
+✅ 方法 1：使用 `\title` 手动拼接作者和日期（适用于简单文档）
+
+你可以自己组合作者和日期作为一行写进标题下方，例如这样：
+
+```
+latex复制编辑\title{论文标题 \\ \large 作者：XXX \hspace{2em} 日期：2025年5月}
+\date{}  % 清空默认日期
+\author{}  % 清空默认作者
+
+\begin{document}
+\maketitle
+```
+
+✔️ 效果：标题下直接出现“作者+日期”，并排在一行。
+
+------
+
+✅ 方法 2：自定义 `\maketitle` 的格式（适用于需要精美排版）
+
+你可以自己写一个 `title page` 块来控制格式，如：
+
+```
+latex复制编辑\begin{titlepage}
+    \centering
+    {\LARGE 论文标题\par}
+    \vspace{1em}
+    {\large 作者：XXX \hspace{3em} 日期：2025年5月\par}
+    \vfill
+\end{titlepage}
+```
+
+✔️ 更灵活美观，可以用 `titlepage` 环境来自定义样式。
+
+------
+
+✅ 方法 3：使用 `titling` 宏包更精细控制
+
+```
+latex复制编辑\usepackage{titling}
+
+\pretitle{\begin{center}\LARGE}
+\posttitle{\par\end{center}}
+\preauthor{\begin{center}\large}
+\postauthor{\hspace{3em}}  % 控制作者和日期间距
+\predate{}
+\postdate{\end{center}}
+
+\title{论文标题}
+\author{作者：XXX}
+\date{日期：2025年5月}
+
+\begin{document}
+\maketitle
 ```
 
 
