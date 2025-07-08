@@ -1,3 +1,13 @@
+# 轨迹优化
+
+​		将一段轨迹用关于时间$t$的多项式函数表示，定义多项式的参数为向量$p$，则有：
+
+![image-20241228212314025](trajectory.assets/image-20241228212314025.png)
+
+对于多段轨迹则
+
+
+
 # 轨迹仿真
 
 脚本文件常用函数：
@@ -7,8 +17,6 @@
 *scatteredInterpolant*:插入二维或三维散点数据
 *interp2*:二维查表  `例如：Cx = interp2(alpha_Cx,Ma_Cx,Cx_table,8,1.4,'spline');`
 *atmoscoesa*：1976 COESA 大气模型 `例如 [T, a, P, Rho] = atmoscoesa(height, action)`
-
-$\bar{p}$
 
 
 # XFLR5与matlab实现固定翼飞行器联合控制仿真
