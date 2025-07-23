@@ -419,3 +419,27 @@ figure(5);bode(syscz);grid on        %计算机控制系统的频域响应
 
 ## sim函数使用
 
+# plot便捷实例
+
+ 相关参数
+`DisplayName`参数为选择对应图例名称，最后使用legend()统一显示
+
+`HandleVisibility`参数为对应图例可见性，选择off即可关闭该plot图例
+
+`grid minor`为打开细致网格，一般接在grid on后。
+
+`axisf =@(axisF) set(gca, 'FontSize',axisF)`为利用匿名函数设置横纵坐标数字大小，12比较大。
+
+
+
+```matlab
+subplot(3,1,3)
+axisf =@(axisF) set(gca, 'FontSize',axisF); % 同时声明设置横纵坐标大小的匿名函数
+for j = 1:n_quad
+    plot(t, -1*pos_desired(3*j).*ones(step,1 ), 'DisplayName', [sprintf("quad_{%dd}",j)], 'LineWidth', 1.2);hold on; 
+	grid monior; %显示细致网格
+    plot(t, -1*q_list(3*j,:),'DisplayName', [sprintf("quad_%d",j)],'LineWidth', 1.2);hold on; grid minor;
+end
+legend('FontSize', 10);xlabel("t / s", 'FontSize', 14);ylabel("-z / m", 'FontSize', 14);axisf(12);
+```
+
