@@ -194,6 +194,43 @@ deb https://mirrors.ustc.edu.cn/ubuntu/ focal-security main restricted universe 
 deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
 ```
 
+我们还可以在`./bashrc`文件中加入代理的设置，防止wsl2终端未应用代理：
+
+```bash
+set_proxy() {
+    # Get the default gateway IP (host machine IP in WSL2 environment)
+    # Prefer 'ip route' command as it provides the correct gateway IP
+    GW_IP=$(ip route | grep '^default via' | awk '{print $3}')
+    
+    # Fallback method: check resolv.conf if the above command fails
+    if [ -z "$GW_IP" ]; then
+        GW_IP=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | head -1)
+        echo "Warning: Using IP from resolv.conf, please verify it's the correct host IP."
+    fi
+    
+    # Final fallback: use common WSL2 default gateway if both methods fail
+    if [ -z "$GW_IP" ]; then
+        GW_IP="172.22.224.1" # Common WSL2 host IP fallback
+        echo "Warning: Using fallback IP address."
+    fi
+    
+    # Set proxy environment variables (uppercase standard)
+    export HTTP_PROXY="http://$GW_IP:7897"
+    export HTTPS_PROXY="http://$GW_IP:7897"
+    export ALL_PROXY="http://$GW_IP:7897"
+    
+    # Set lowercase variants for backward compatibility
+    export http_proxy="http://$GW_IP:7897"
+    export https_proxy="http://$GW_IP:7897"
+    export all_proxy="http://$GW_IP:7897"
+    
+    echo "Proxy has been set to: http://$GW_IP:7897"
+    echo "Tip: Use 'curl -I https://www.google.com' to test proxy connectivity."
+}
+```
+
+
+
 ### 释放空间
 
 wsl磁盘只会自动扩容不会缩容，所以卸载的文件不会释放空间，一般用不上这种方式。除非内存十分紧张时，如下
@@ -240,7 +277,7 @@ ssh -T git@github.com
 
 ### 安装ros2
 
-使用鱼香ROS指令按照ROS2
+使用鱼香ROS指令按照ROS2 humble(colcon相关的库是默认安装在python 3.10.12环境下的，额外依赖的库可直接使用pip安装，暂时对于conda虚拟环境管理ros相关库无较好方案)
 
 ```bash
 wget http://fishros.com/install -O fishros && . fishros
@@ -249,11 +286,25 @@ wget http://fishros.com/install -O fishros && . fishros
 按照提示即可，测试使用小乌龟例程
 
 ```bash
+# 测试安装
 ros2 run turtlesim turtlesim_node
 ros2 run turtlesim turtle_teleop_key
 ```
 
-## 安装PX4
+最简单的命令，基本操作参考官方例程(https://docs.ros.org/en/rolling/Tutorials.html)，动手学ros2(https://fishros.com/d2lros2/#/)和[帖子](https://foooor.com/ROS2/01-ROS%E7%AE%80%E4%BB%8B.html)。
+
+```bash
+#创建功能包 ros2 pkg create --build-type ament_cmake(python)  <package_name>
+ros2 pkg create follow_cpp --build-type ament_cmake --dependencies rclcpp tf2 tf2_ros geometry_msgs turtlesim
+ros2 pkg create follow_py --build-type ament_python --dependencies rclpy tf_transformations tf2_ros geometry_msgs turtlesim
+# 编译 使用symlink-install选项以便后续修改代码后无需重新编译
+colcon build --packages-select your_package_name --symlink-install
+source install/local_setup.bash
+```
+
+
+
+### 安装PX4
 
 安装**PX4开发环境**，参考官方链接https://docs.px4.io/main/zh/ros2/user_guide.html#humble以及[阿木](https://blog.csdn.net/msq19895070/article/details/149111214)，克隆太慢可以开启clash verge的TUN模式，尽量用外国梯子，克隆结束再调回来。（注意我们选择最新稳定版本1.15.4，1.16还在开发中）
 
@@ -271,11 +322,15 @@ make px4_sitl
 
 > 注意在make编译可能出现Protobuf版本问题，参考[网友](https://blog.gitcode.com/12276389c3d6afe286e683d6629504bd.html)得知此问题为wsl意外一入了win10的conda内的Protobuf版本，第一种解决办法是临时修改Anaconda文件名防止索引到，第二种是在/etc/wsl.conf文件中禁用Windows路径继承。
 
+------
+
 安装**ros2-humble**(前面已安装)，以及python依赖：
 
 ```bash
 pip install --user -U empy==3.3.4 pyros-genmsg setuptools
 ```
+
+---
 
 安装**Micro XRCE-DDS Agent & Client**，官方教程给的2.4.2版本比较老，有网友安装代码版本为v3.0.1,目前测试对与于1.15.4和2.4.2可以兼容
 
@@ -299,7 +354,11 @@ make px4_sitl gz_x500
 MicroXRCEAgent udp4 -p 8888
 ```
 
+---
+
 安装**WSL下的QGC**,参考[官方链接](https://docs.px4.io/main/zh/dev_setup/dev_env_windows_wsl.html#qgroundcontrol-in-wsl)我们选在安装Windows下的QGC，然后建立通信连接到WSL，点击[QGroundControl on Windows](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html#windows) 下载，并按照提示安装驱动；在WSL终端运行`ip addr | grep eth0` 得到`eth0` 接口 `inet` 地址的第一部分，在QGC **Application Settings > Comm Links**中添加新的UDP连接，选择port为`18570`,ServerAddresses添加为`刚查到的ip:18570`。
+
+---
 
 安装**官方的PX4示例ROS2软件包**，创建空的workspace，下载 [px4_ros_com](https://github.com/PX4/px4_ros_com) and [px4_msgs](https://github.com/PX4/px4_msgs) 包，然后利用colcon命令编译ROS2空间：
 
@@ -320,6 +379,8 @@ colcon build
  pip install sqlmap -U
 ```
 
+---
+
 **运行示例软件包**，实现PX4环境内无人机的数据监听：
 
 ```bash
@@ -334,4 +395,111 @@ MicroXRCEAgent udp4 -p 8888
 ```
 
 此时，基本的PX4+gazebo仿真环境已搭建完毕。
+
+## PX4相关(V1.15.4)
+
+世界及飞机模型文件均在在`PX4-Autopilot/Tools/simulation/gz`，
+
+### make px4_sitl gz_x500 解析
+
+可以参考[PX4编译文件 Makefile 剖析](https://blog.csdn.net/sinat_16643223/article/details/119523564)和[PX4 CMakeLists.txt 文件剖析](https://blog.csdn.net/lipi37/article/details/103041317)，来剖析我们是如何执行我们的PX4内核及gz仿真环境的。当执行：`make px4_sitl gz_x500`时，**PX4 的根目录下的 `Makefile` 会解析这个命令**，并**触发一系列构建与运行流程**。
+
+---
+
+#### **命令解析阶段**
+
+ `px4_sitl` 是一个 **构建目标（target）**，`Makefile`中添加后缀，对应的是：`px4_sitl_default`是默认构建目标，可以在`build`目录下看到编译后的文件夹。`gz_x500` **不是 Makefile 中的目标**，而是 **传递给 PX4-SITL 运行时的参数**。
+
+---
+
+#### **构建阶段（make px4_sitl）**
+
+1. 调用构建函数  
+```makefile
+px4_sitl_default:
+	@$(call cmake-build,px4_sitl_default)
+```
+- 使用 `cmake` 构建 `px4_sitl_default` 配置  
+- 所有构建产物输出到：`build/px4_sitl_default/`
+
+2. 构建产物  
+- **PX4-SITL 可执行文件**：`build/px4_sitl_default/bin/px4`  
+- **Gazebo 插件与模型资源**：`Tools/simulation/gz/models/x500/model.sdf`
+- **运行时启动脚本**：`build/px4_sitl_default/rootfs/etc/init.d-posix/rcS`  ,启动文件的模板位于：`ROMFS/px4fmu_common/init.d-posix/rcS`
+
+> PX4 使用 **ROMFS 打包机制**，将启动脚本、参数、模型配置等打包成一个虚拟文件系统（`build/rootfs`），用于 SITL 仿真。注意init.d-posix中带posix后缀的才是给sitl使用的
+
+---
+
+#### **运行阶段（带 gz_x500 参数）**
+
+1. **实际运行命令**  
+```bash
+./build/px4_sitl_default/bin/px4 # -d ./build/px4_sitl_default/rootfs \
+ # -s etc/init.d-posix/rcS 
+```
+- ~~`-d` 指定虚拟根文件系统目录  `-s` 指定启动脚本路径（相对于 `-d` 目录），注意新版本不支持-d与-s参数，因此直接运行`./px4`可执行文件即可。~~当我们想要修改默认的参数时，只需要通过直接修改相关的**环境变量**即可，如下为例，我们打开一个小车的模型：
+
+```BASH
+PX4_SIM_MODEL=gz_r1_rover ./build/px4_sitl_default/bin/px4
+```
+
+- `./px4`会使用默认的世界文件`Tools/simulation/gz/worlds/default.sdf`，细节实现在`build/px4_sitl_default/rootfs/etc/init.d-posix/px4-rc.simulator`脚本文件内。
+
+2. **rcS 脚本内部流程**  
+
+| 阶段     | 作用                                                      |
+| -------- | --------------------------------------------------------- |
+| 参数解析 | 读取 `PX4_SIM_MODEL`、`PX4_SYS_AUTOSTART`、`px4_instance` |
+| 机架匹配 | 根据模型名查找 `etc/init.d-posix/airframes/XXXX_model`    |
+| 参数加载 | 加载 `parameters.bson` 或默认值                           |
+| 模块启动 | 启动 `sensors`、`ekf2`、`commander`、`navigator` 等       |
+| 仿真桥   | 启动 `px4-rc.simulator`（Gazebo 或 JMavSim）              |
+| ROS2     | 启动 `uxrce_dds_client`（ROS2 通信）                      |
+| 日志     | 启动 `logger`                                             |
+| 完成     | `mavlink boot_complete` 通知地面站                        |
+
+3. **px4-rc.simulator仿真器启动器脚本**
+
+`px4-rc.simulator` 是 PX4-SITL 的“仿真器启动器”，被Rcs调用：根据环境变量决定用哪个仿真器、是否启动 Gazebo 世界、如何连接模型，并最终启动 `gz_bridge` 完成 PX4 ↔ 仿真器通信。
+
+```bash
+#./build/px4_sitl_default/rootfs/gz_env.sh中定义，{gz_world}与{PX4_GZ_WORLD}未定义时，便会在在px4-rc.simulator中执行
+export PX4_GZ_MODELS=~/PX4-Autopilot/Tools/simulation/gz/models
+export PX4_GZ_WORLDS=~/PX4-Autopilot/Tools/simulation/gz/worlds
+export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:$PX4_GZ_MODELS:$PX4_GZ_WORLDS
+```
+
+| 变量名                                   | 用途                              |
+| ---------------------------------------- | --------------------------------- |
+| `PX4_SIM_MODEL`                          | 模型名（如 `gz_x500`）            |
+| `PX4_GZ_WORLDS`                          | 搜索世界文件时搜索的路径          |
+| `PX4_GZ_WORLD`                           | 世界文件名（不含扩展名.sdf）      |
+| `PX4_GZ_MODEL_NAME`                      | 已有模型名（attach 模式）         |
+| `PX4_GZ_MODEL_POSE`                      | 初始位姿 `"x,y,z,roll,pitch,yaw"` |
+| `HEADLESS`                               | 非空 → 不启动 GUI                 |
+| `PX4_GZ_STANDALONE`                      | 非空 → 不启动 Gazebo，只连接      |
+| `PX4_SIM_HOSTNAME` / `PX4_SIM_HOST_ADDR` | 通用 mavlink 仿真器主机名/IP      |
+| `px4_instance`                           | 多实例编号（自动由 rcS 设置）     |
+
+---
+
+#### **完整流程一览**
+
+| 步骤 | 动作                                                        |
+| ---- | ----------------------------------------------------------- |
+| 1    | 用户执行 `make px4_sitl gz_x500`                            |
+| 2    | Makefile 调用 `cmake-build(px4_sitl_default)`               |
+| 3    | CMake 构建并生成 `bin/px4` 与 `rootfs/etc/init.d-posix/rcS` |
+| 4    | PX4-SITL 启动，加载 `rcS`                                   |
+| 5    | `rcS` 根据参数启动 Gazebo Ignition，加载 `x500` 模型        |
+| 6    | PX4 与 Gazebo 建立通信，仿真开始                            |
+
+> ✅ `make px4_sitl gz_x500` 会构建 PX4-SITL 仿真环境，并启动 Gazebo Ignition 加载 `x500` 无人机模型，完成闭环仿真。
+
+如需进一步调试或自定义模型/世界，可直接修改：
+
+- `ROMFS/px4fmu_common/init.d-posix/rcS`（模板）  
+- `Tools/simulation/gz/models/x500/model.sdf`  
+- `Tools/simulation/gz/worlds/empty.sdf`
 
