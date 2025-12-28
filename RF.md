@@ -413,6 +413,14 @@ $\alpha$为定常学习率，$\beta_t$的分母分子表明了当$q_t$较大时�
 
 ![](RF.assets/monte carlo 策略梯度.png)
 
+### （补）策略熵定义
+
+​		强化学习中，策略熵即策略的[信息熵](https://zhida.zhihu.com/search?content_id=254717796&content_type=Article&match_order=1&q=信息熵&zd_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ6aGlkYV9zZXJ2ZXIiLCJleHAiOjE3NjEzNjE5OTAsInEiOiLkv6Hmga_nhrUiLCJ6aGlkYV9zb3VyY2UiOiJlbnRpdHkiLCJjb250ZW50X2lkIjoyNTQ3MTc3OTYsImNvbnRlbnRfdHlwZSI6IkFydGljbGUiLCJtYXRjaF9vcmRlciI6MSwiemRfdG9rZW4iOm51bGx9.9wtQms-TYIVA2N_EAPBaTKZI_47QCFLH4yUHJbyLTLw&zhida_source=entity)。我们考虑离散的动作空间$A$  , 策略$\pi$在状态$s$处的信息熵定义为 
+$$
+\text{Entropy Loss}=\mathbb{E}_{a\sim\pi(s,\theta)}[-\log\pi(a|s)]
+$$
+策略信息熵衡量了策略在状态$s$处的混乱与有序情况。当策略熵为0时，代表策略完全收敛到了一个固定的动作$a$上，如果策略熵很大，代表策略的动作选取比较随机，更可能探索到多样性的轨迹。因此[最大熵RL](https://zhida.zhihu.com/search?content_id=254717796&content_type=Article&match_order=1&q=最大熵RL&zd_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ6aGlkYV9zZXJ2ZXIiLCJleHAiOjE3NjEzNjE5OTAsInEiOiLmnIDlpKfnhrVSTCIsInpoaWRhX3NvdXJjZSI6ImVudGl0eSIsImNvbnRlbnRfaWQiOjI1NDcxNzc5NiwiY29udGVudF90eXBlIjoiQXJ0aWNsZSIsIm1hdGNoX29yZGVyIjoxLCJ6ZF90b2tlbiI6bnVsbH0.tcioyNasFn9mZwc23fwe46AA67UE-qldcvKQ81lDfVQ&zhida_source=entity)通常找到一个策略，使得最大化累积奖励的同时尽可能最大化策略的熵。
+
 ## 1.7 Actor-Critic Methods
 
 ### Q actor-critic算法
@@ -597,3 +605,6 @@ $$
 
 <img src="RF.assets/TRPO.png" style="zoom:150%;" />
 
+## 1.9 PPO
+
+参考https://zhuanlan.zhihu.com/p/614115887
