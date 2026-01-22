@@ -252,6 +252,52 @@ detach vdisk
 
 ## WSL2安装ROS2+PX4开发环境
 
+### Zsh安装
+
+安装ZSH可以参考https://www.haoyep.com/posts/zsh-config-oh-my-zsh/。
+
+```bash
+# 更新软件源，安装zsh
+sudo apt update && sudo apt upgrade -y
+sudo apt install zsh
+# 设置zsh为默认shell
+chsh -s /bin/zsh
+```
+
+第一次运行 zsh 时会进入配置引导，键入0即可创建对应的配置文件`.zshrc`，然后使用**oh-my-zsh**来配置，安装方式任选一个即可：
+
+| Method                                           | Command                                                      |
+| :----------------------------------------------- | :----------------------------------------------------------- |
+| **curl**                                         | `sh -c "$(curl -fsSL https://install.ohmyz.sh/)"`            |
+| **wget**                                         | `sh -c "$(wget -O- https://install.ohmyz.sh/)"`              |
+| **fetch**                                        | `sh -c "$(fetch -o - https://install.ohmyz.sh/)"`            |
+| 国内curl[镜像](https://gitee.com/pocmon/ohmyzsh) | `sh -c "$(curl -fsSL https://gitee.com/pocmon/ohmyzsh/raw/master/tools/install.sh)"` |
+| 国内wget[镜像](https://gitee.com/pocmon/ohmyzsh) | `sh -c "$(wget -O- https://gitee.com/pocmon/ohmyzsh/raw/master/tools/install.sh)"` |
+
+可以在[内置主题样式截图](https://github.com/ohmyzsh/ohmyzsh/wiki/Themes)中查看所有 zsh 内置的主题样式和对应的主题名。这些内置主题已经放在 ～/.oh-my-zsh/themes 目录下，这里使用 [powerlevel10k](https://github.com/romkatv/powerlevel10k) 主题：
+
+```bash
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+# 中国用户可以使用 gitee.com 上的官方镜像加速下载
+git clone --depth=1 https://gitee.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+```
+
+在 `~/.zshrc` 设置 `ZSH_THEME="powerlevel10k/powerlevel10k"`，再次启动zsh会自动引导你配置主题（后续可以通过运行`p10k configure`来进行重新配置）。
+
+`oh-my-zsh` 已经内置了 `git` 插件，插件目录在 `～/.oh-my-zsh/plugins` 中，更多插件可以在 [awesome-zsh-plugins](https://github.com/unixorn/awesome-zsh-plugins) 里查看，例如[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) 命令提示插件的安装：
+
+```bash
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+```
+
+然后修改`~/.zshrc`中插件列表参数即可：
+
+```bash
+plugins=(git zsh-autosuggestions)
+```
+
+
+
 ### 安装vscode
 
 只需要在本地vscode安装WSL插件~~及相关的ros插件~~即可，参考[官方链接](https://learn.microsoft.com/zh-cn/windows/wsl/tutorials/wsl-vscode)。WSL2可以利用WSLG直接在IDE中显示相关图像如（rqt等）。
@@ -301,8 +347,6 @@ ros2 pkg create follow_py --build-type ament_python --dependencies rclpy tf_tran
 colcon build --packages-select your_package_name --symlink-install
 source install/local_setup.bash
 ```
-
-
 
 ### 安装PX4
 
