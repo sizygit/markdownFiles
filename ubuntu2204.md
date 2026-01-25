@@ -171,3 +171,24 @@ gnome-shell --replace &
 ```
 
 还可以，按下 `Alt + F2`，然后输入 `r`并按回车。这会使 GNOME Shell 重新启动。
+
+#### 3.ROS2在zsh下无法自动补全
+
+1. 首先检查`python3-argcomplete`插件是否安装，
+
+```bash
+sudo apt install python3-argcomplete
+```
+
+2. 在文件/opt/ros/${ROS-VERSION}/share/rosidl_cli/environment/rosidl-argcomplete.zsh中，注释掉下面内容：
+
+```bash
+# autoload -U +X compinit && compinit
+```
+
+3. 在文件~/.zshrc中添加下面内容：
+
+```bash
+eval "$(register-python-argcomplete3 colcon)"
+```
+
