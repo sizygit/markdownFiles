@@ -354,7 +354,7 @@ source install/local_setup.bash
 
 ```bash
 cd
-git clone https://github.com/PX4/PX4-Autopilot.git --recursive
+git clone https://github.com/PX4/PX4-Autopilot.git
 git describe --tags  # 查看当前tag
 git tag -l --sort=-taggerdate # 查看tag
 git checkout -b v1.15.4-branch v1.15.4 # 根据1.15.4的tag建立新分支
